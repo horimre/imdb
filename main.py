@@ -1,6 +1,9 @@
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 class InvalidParameterException(Exception):
@@ -20,9 +23,10 @@ def get_info_top_n_movies(n: int) -> dict:
     if n not in range(1, 251):
         raise InvalidParameterException('Invalid parameter! Please provide an integer between 1 and 250!')
 
+    logging.info('Process IMDB top 250 movies page')
     top250 = requests.get('https://www.imdb.com/chart/top/?ref_=nv_mp_mv250').text
 
-    top_movies = {"Rank": [], "Title": [], "Link": [], "Rating": [], "Number of Ratings": []}
+    top_movies = {"Rank": [], "Title": [], "Rating": [], "Number of Ratings": [], "Oscars": []}
 
     soup = BeautifulSoup(top250, 'lxml')
     movies_table = soup.find('tbody', class_='lister-list')
@@ -32,10 +36,27 @@ def get_info_top_n_movies(n: int) -> dict:
         # get the rank of the movie based on the index
         top_movies["Rank"].append(idx + 1)
 
+        # TODO: create separate functions to get title, oscars and ratings
         for title in movie.find_all('td', class_='titleColumn'):
-            # title is inside an 'a' tag. the link is needed to get the number of oscars
-            top_movies["Title"].append(title.find("a").text)
-            top_movies["Link"].append(f'https://www.imdb.com/{title.find("a")["href"]}')
+            # title is inside an 'a' tag
+            movie_title = title.find("a").text
+            top_movies["Title"].append(movie_title)
+
+            # get oscars from the movie subpage. simulate that the request is coming from mozilla else getting HTTP 403
+            movie_url = f'https://www.imdb.com{title.find("a")["href"]}'
+            headers = {"user-agent": "Mozilla/5.0"}
+
+            logging.info(f'Process "{movie_title}" movie page')
+            movie_page = requests.get(movie_url, headers=headers).text
+
+            movie_soup = BeautifulSoup(movie_page, 'lxml')
+            movie_awards = movie_soup.find('a', {"aria-label": "See more awards and nominations"}).text
+
+            number_of_oscars = 0
+            if 'Won' in movie_awards:
+                number_of_oscars = int(movie_awards.split()[1])
+
+            top_movies["Oscars"].append(number_of_oscars)
 
         for rating in movie.find_all('td', class_='ratingColumn imdbRating'):
             # rating is inside a 'strong' tag. number of ratings has to be filtered out from the title tag
@@ -43,11 +64,7 @@ def get_info_top_n_movies(n: int) -> dict:
             top_movies["Rating"].append(float(rating.find("strong").text))
             top_movies["Number of Ratings"].append(int(rating.find("strong")['title'].split()[3].replace(',', '')))
 
-    # exclude information which is not needed in the final outputs
-    excluded_keys = ['Link']
-    basic_info = {key: value for key, value in top_movies.items() if key not in excluded_keys}
-
-    return basic_info
+    return top_movies
 
 
 def write_to_file(name: str, dictionary: dict) -> None:
@@ -66,5 +83,5 @@ if __name__ == '__main__':
         top_n_movies = get_info_top_n_movies(20)
         write_to_file('original_ratings', top_n_movies)
     except InvalidParameterException as e:
-        print(f'Error: {e}')
+        logging.error(f'Error: {e}')
 
