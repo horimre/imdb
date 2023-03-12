@@ -11,13 +11,13 @@ class InvalidParameterException(Exception):
         self.msg = msg
 
 
-def get_info_top_n_movies(n: int) -> dict:
+def get_info_top_n_movies(n: int) -> pd.DataFrame:
     """
     Returns information on the top n highest rated movies based on the input parameter
         Parameters:
             n (int): number of movies to get information on (number should be between 1 and 250)
         Returns:
-            basic_info (dict): dictionary containing the basic information on each movie
+            top_movies_df (pd.DataFrame): DataFrame containing information on each movie
     """
     # input parameter validation
     if n not in range(1, 251):
@@ -56,7 +56,8 @@ def get_info_top_n_movies(n: int) -> dict:
             top_movies["Rating"].append(float(rating.find("strong").text))
             top_movies["Number of Ratings"].append(int(rating.find("strong")['title'].split()[3].replace(',', '')))
 
-    return top_movies
+    top_movies_df = pd.DataFrame(top_movies).set_index('Rank')
+    return top_movies_df
 
 
 def get_number_of_oscars(title_td: BeautifulSoup, movie_title: str) -> int:
@@ -85,19 +86,14 @@ def get_number_of_oscars(title_td: BeautifulSoup, movie_title: str) -> int:
     return number_of_oscars
 
 
-def write_to_file(name: str, dictionary: dict) -> pd.DataFrame:
+def write_to_file(name: str, movies_df: pd.DataFrame) -> pd.DataFrame:
     """
     Write the content of the given dictionary to a csv file
         Parameters:
             name (str): filename to use
-            dictionary (dict): dictionary containing the information on each movie
-        Returns:
-            movies_df (pd.DataFrame): DataFrame containing information about top20 movies
+            movies_df (pd.DataFrame): DataFrame containing the information on each movie
     """
-    movies_df = pd.DataFrame(dictionary).set_index('Rank')
     movies_df.to_csv(f'{name}.csv')
-
-    return movies_df
 
 
 def oscar_adjustment(row: pd.Series) -> pd.Series:
@@ -150,8 +146,8 @@ def final_rank(movies_df: pd.DataFrame):
 
 if __name__ == '__main__':  # pragma: no cover
     try:
-        top_n_movies = get_info_top_n_movies(3)
-        top_n_movies_df = write_to_file('original_ratings', top_n_movies)
+        top_n_movies_df = get_info_top_n_movies(20)
+        write_to_file('original_ratings', top_n_movies_df)
         adjust_rating_with_oscars(top_n_movies_df)
     except InvalidParameterException as e:
         logging.error(f'Error: {e}')
