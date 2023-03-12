@@ -125,7 +125,6 @@ def adjust_rating_with_oscars(movies_df: pd.DataFrame) -> pd.DataFrame:
             movies_df (pd.DataFrame): Transformed movies DataFrame
     """
     movies_df = movies_df.apply(oscar_adjustment, axis='columns')
-    movies_df.to_csv('oscar_adjustment.csv')
     return movies_df
 
 
@@ -148,6 +147,7 @@ if __name__ == '__main__':  # pragma: no cover
     try:
         top_n_movies_df = get_info_top_n_movies(20)
         write_to_file('original_ratings', top_n_movies_df)
-        adjust_rating_with_oscars(top_n_movies_df)
+        oscar_adjusted_df = adjust_rating_with_oscars(top_n_movies_df)
+        write_to_file('oscar_adjusted_ratings', oscar_adjusted_df)
     except InvalidParameterException as e:
         logging.error(f'Error: {e}')
