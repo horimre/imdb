@@ -23,8 +23,13 @@ def get_info_top_n_movies(n: int) -> dict:
     if n not in range(1, 251):
         raise InvalidParameterException('Invalid parameter! Please provide an integer between 1 and 250!')
 
-    logging.info('Process IMDB top 250 movies page')
-    top250 = requests.get('https://www.imdb.com/chart/top/?ref_=nv_mp_mv250').text
+    logging.info('Processing IMDB top 250 movies page')
+
+    url = 'https://www.imdb.com/chart/top/'
+    # get the page in english to avoid different results based on geolocation
+    headers = {'Accept-Language': 'en-US'}
+
+    top250 = requests.get(url, headers=headers).text
 
     top_movies = {"Rank": [], "Title": [], "Rating": [], "Number of Ratings": [], "Oscars": []}
 
@@ -36,26 +41,14 @@ def get_info_top_n_movies(n: int) -> dict:
         # get the rank of the movie based on the index
         top_movies["Rank"].append(idx + 1)
 
-        # TODO: create separate functions to get title, oscars and ratings
         for title in movie.find_all('td', class_='titleColumn'):
+
             # title is inside an 'a' tag
             movie_title = title.find("a").text
             top_movies["Title"].append(movie_title)
 
-            # get oscars from the movie subpage. simulate that the request is coming from mozilla else getting HTTP 403
-            movie_url = f'https://www.imdb.com{title.find("a")["href"]}'
-            headers = {"user-agent": "Mozilla/5.0"}
-
-            logging.info(f'Process "{movie_title}" movie page')
-            movie_page = requests.get(movie_url, headers=headers).text
-
-            movie_soup = BeautifulSoup(movie_page, 'lxml')
-            movie_awards = movie_soup.find('a', {"aria-label": "See more awards and nominations"}).text
-
-            number_of_oscars = 0
-            if 'Won' in movie_awards:
-                number_of_oscars = int(movie_awards.split()[1])
-
+            # get the number of Oscars
+            number_of_oscars = get_number_of_oscars(title, movie_title)
             top_movies["Oscars"].append(number_of_oscars)
 
         for rating in movie.find_all('td', class_='ratingColumn imdbRating'):
@@ -65,6 +58,32 @@ def get_info_top_n_movies(n: int) -> dict:
             top_movies["Number of Ratings"].append(int(rating.find("strong")['title'].split()[3].replace(',', '')))
 
     return top_movies
+
+
+def get_number_of_oscars(title_td: BeautifulSoup, movie_title: str) -> int:
+    """
+    Get the number of Oscars won from the movie subpage.
+    Simulate that the request is coming from Mozilla else getting HTTP 403
+        Parameters:
+            title_td (BeautifulSoup): table column containing the link to the subpage
+            movie_title (str): title of the movie
+        Returns:
+            number_of_oscars (int): number of oscars won
+    """
+    number_of_oscars = 0
+    movie_url = f'https://www.imdb.com{title_td.find("a")["href"]}'
+    headers = {"user-agent": "Mozilla/5.0"}
+
+    logging.info(f'Processing "{movie_title}" subpage')
+    movie_page = requests.get(movie_url, headers=headers).text
+
+    movie_soup = BeautifulSoup(movie_page, 'lxml')
+    movie_awards = movie_soup.find('a', {"aria-label": "See more awards and nominations"}).text
+
+    if 'Won' in movie_awards:
+        number_of_oscars = int(movie_awards.split()[1])
+
+    return number_of_oscars
 
 
 def write_to_file(name: str, dictionary: dict) -> None:
