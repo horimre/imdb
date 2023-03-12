@@ -42,7 +42,6 @@ def get_info_top_n_movies(n: int) -> dict:
         top_movies["Rank"].append(idx + 1)
 
         for title in movie.find_all('td', class_='titleColumn'):
-
             # title is inside an 'a' tag
             movie_title = title.find("a").text
             top_movies["Title"].append(movie_title)
@@ -97,10 +96,9 @@ def write_to_file(name: str, dictionary: dict) -> None:
     df.to_csv(f'{name}.csv')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     try:
         top_n_movies = get_info_top_n_movies(20)
         write_to_file('original_ratings', top_n_movies)
     except InvalidParameterException as e:
         logging.error(f'Error: {e}')
-
