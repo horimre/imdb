@@ -34,14 +34,13 @@ class TestImdb(unittest.TestCase):
             imdb.get_info_top_n_movies(300)
 
     def test_write_df_to_csv(self):
-        self.movie = {"Rank": 1, "Title": 'The Shawshank Redemption', "Rating": 9.2,
-                      "Number of Ratings": 2712879, "Oscars": 0}
-        test_df = pd.DataFrame(self.movie, index=[0])
+        self.movie = {"Rank": [1], "Title": ['The Shawshank Redemption'], "Rating": [9.2], "Oscars": [0]}
+        test_df = pd.DataFrame(self.movie)
 
-        imdb.write_to_file('Test', test_df)
-        df = pd.read_csv('Test.csv')
+        movies_df = imdb.write_to_file('Test', test_df)
+        movies_df = movies_df.loc[:, movies_df.columns != 'Number of Ratings'].reset_index()
 
-        self.assertEqual(True, test_df.equals(df))
+        self.assertEqual(True, test_df.equals(movies_df))
 
 
 if __name__ == '__main__':

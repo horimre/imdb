@@ -85,20 +85,73 @@ def get_number_of_oscars(title_td: BeautifulSoup, movie_title: str) -> int:
     return number_of_oscars
 
 
-def write_to_file(name: str, dictionary: dict) -> None:
+def write_to_file(name: str, dictionary: dict) -> pd.DataFrame:
     """
     Write the content of the given dictionary to a csv file
         Parameters:
             name (str): filename to use
             dictionary (dict): dictionary containing the information on each movie
+        Returns:
+            movies_df (pd.DataFrame): DataFrame containing information about top20 movies
     """
-    df = pd.DataFrame(dictionary).set_index('Rank')
-    df.to_csv(f'{name}.csv')
+    movies_df = pd.DataFrame(dictionary).set_index('Rank')
+    movies_df.to_csv(f'{name}.csv')
+
+    return movies_df
+
+
+def oscar_adjustment(row: pd.Series) -> pd.Series:
+    """
+    Calculate the oscar adjustment
+        Parameters:
+            row (pd.Series): Row of the DataFrame to transform
+        Returns:
+            row (pd.Series): Transformed DataFrame row
+    """
+    if row["Oscars"] in range(1, 3):
+        row["Rating"] = row["Rating"] + 0.3
+    elif row["Oscars"] in range(3, 6):
+        row["Rating"] = row["Rating"] + 0.5
+    elif row["Oscars"] in range(6, 11):
+        row["Rating"] = row["Rating"] + 1
+    elif row["Oscars"] > 10:
+        row["Rating"] = row["Rating"] + 1.5
+
+    return row
+
+
+def adjust_rating_with_oscars(movies_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Applying the Oscar transformation
+        Parameters:
+            movies_df (pd.DataFrame): movies DataFrame
+        Returns:
+            movies_df (pd.DataFrame): Transformed movies DataFrame
+    """
+    movies_df = movies_df.apply(oscar_adjustment, axis='columns')
+    movies_df.to_csv('oscar_adjustment.csv')
+    return movies_df
+
+
+def final_rank(movies_df: pd.DataFrame):
+    '''
+    # sort by rating
+    movies_df = movies_df.sort_values(by="Rating", ascending=False)
+    # create rank
+    movies_df['Rank'] = movies_df['Rating'].rank(ascending=False).astype(int)
+
+    # rearrange columns
+    movies_df = movies_df[['Rank', 'Title', 'Rating', 'Number of Ratings', 'Oscars']].set_index('Rank')
+
+    # print(movies_df.head())
+    '''
+    pass
 
 
 if __name__ == '__main__':  # pragma: no cover
     try:
-        top_n_movies = get_info_top_n_movies(20)
-        write_to_file('original_ratings', top_n_movies)
+        top_n_movies = get_info_top_n_movies(3)
+        top_n_movies_df = write_to_file('original_ratings', top_n_movies)
+        adjust_rating_with_oscars(top_n_movies_df)
     except InvalidParameterException as e:
         logging.error(f'Error: {e}')
