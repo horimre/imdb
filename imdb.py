@@ -4,7 +4,9 @@ import pandas as pd
 import logging
 import math
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s'
+                    , datefmt='%Y/%m/%d %H:%M:%S')
+logger = logging.getLogger('imdb')
 
 
 class InvalidParameterException(Exception):
@@ -24,7 +26,7 @@ def get_info_top_n_movies(n: int) -> pd.DataFrame:
     if n not in range(1, 251):
         raise InvalidParameterException('Invalid parameter! Please provide an integer between 1 and 250!')
 
-    logging.info('Processing IMDB top 250 movies page')
+    logger.info('Processing IMDB top 250 movies page')
 
     url = 'https://www.imdb.com/chart/top/'
     # get the page in english to avoid different results based on geolocation
@@ -75,7 +77,7 @@ def get_number_of_oscars(title_td: BeautifulSoup, movie_title: str) -> int:
     movie_url = f'https://www.imdb.com{title_td.find("a")["href"]}'
     headers = {"user-agent": "Mozilla/5.0"}
 
-    logging.info(f'Processing "{movie_title}" subpage')
+    logger.info(f'Processing "{movie_title}" subpage')
     movie_page = requests.get(movie_url, headers=headers).text
 
     movie_soup = BeautifulSoup(movie_page, 'lxml')
@@ -192,4 +194,4 @@ if __name__ == '__main__':  # pragma: no cover
         # final_top_list_df = final_rank(vote_adjusted_df)
         # write_to_file('final_top_list', final_top_list_df)
     except InvalidParameterException as e:
-        logging.error(f'Error: {e}')
+        logger.error(f'Error: {e}')

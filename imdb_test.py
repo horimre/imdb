@@ -2,6 +2,10 @@ import unittest
 import unittest.mock as mock
 import imdb
 import pandas as pd
+import logging
+
+
+logging.getLogger('imdb').disabled = True
 
 
 class TestImdb(unittest.TestCase):
