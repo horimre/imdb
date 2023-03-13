@@ -90,6 +90,14 @@ class TestImdb(unittest.TestCase):
 
         self.assertEqual(10.4, movies_df.loc[0, 'Rating'])
 
+    def test_vote_adjustment(self):
+        self.movies = {"Rank": [1, 2], "Title": ['The Shawshank Redemption', 'The Godfather'], "Rating": [9.2, 9.2],
+                       "Number of Ratings": [2712879, 1884969], "Oscars": [0, 3]}
+        test_df = pd.DataFrame(self.movies)
+        movies_df = imdb.adjust_rating_with_votes(test_df)
+
+        self.assertEqual(8.4, movies_df.loc[1, 'Rating'])
+
 
 if __name__ == '__main__':
     unittest.main()
