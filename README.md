@@ -27,6 +27,9 @@ mac\linux:
   source .venv/bin/activate
   ```
   Once activated you will see the name of the environment within the terminal
+```console
+(.venv) (base) horimre@Imre-MBP imdb % 
+```
   
 5. Install requirements:
   ```
