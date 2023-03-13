@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import pandas as pd
 import logging
+import math
 
 logging.basicConfig(level=logging.INFO)
 
@@ -128,26 +129,64 @@ def adjust_rating_with_oscars(movies_df: pd.DataFrame) -> pd.DataFrame:
     return movies_df
 
 
+def vote_adjustment(row: pd.Series) -> pd.Series:
+    """
+    Calculate the vote adjustment
+        Parameters:
+            row (pd.Series): Row of the DataFrame to transform
+        Returns:
+            row (pd.Series): Transformed DataFrame row
+    """
+    row["Rating"] = row["Rating"] - (math.floor((row["max_votes"] - row["Number of Ratings"])/100_000)*0.1)
+    return row
+
+
+def adjust_rating_votes(movies_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Applying the Number Of Ratings transformation
+        Parameters:
+            movies_df (pd.DataFrame): movies DataFrame
+        Returns:
+            movies_df (pd.DataFrame): Transformed movies DataFrame
+    """
+    movies_df['max_votes'] = movies_df['Number of Ratings'].max()
+    movies_df = movies_df.apply(vote_adjustment, axis='columns')
+    movies_df = movies_df.drop(['max_votes'], axis=1)
+    return movies_df
+
+
 def final_rank(movies_df: pd.DataFrame):
-    '''
+
     # sort by rating
-    movies_df = movies_df.sort_values(by="Rating", ascending=False)
+    print(movies_df.index)
+
+    movies_df = movies_df.sort_values(by=["Rating", "Rank"], ascending=False)
+
     # create rank
-    movies_df['Rank'] = movies_df['Rating'].rank(ascending=False).astype(int)
+    # movies_df['Rank'] = movies_df['Rating'].rank(ascending=False).astype(int)
 
     # rearrange columns
-    movies_df = movies_df[['Rank', 'Title', 'Rating', 'Number of Ratings', 'Oscars']].set_index('Rank')
+    # movies_df = movies_df[['Rank', 'Title', 'Rating', 'Number of Ratings', 'Oscars']].set_index('Rank')
 
-    # print(movies_df.head())
-    '''
-    pass
+    return movies_df
 
 
 if __name__ == '__main__':  # pragma: no cover
     try:
-        top_n_movies_df = get_info_top_n_movies(20)
+        top_n_movies_df = get_info_top_n_movies(3)
         write_to_file('original_ratings', top_n_movies_df)
+
         oscar_adjusted_df = adjust_rating_with_oscars(top_n_movies_df)
+        # round rating to 1 decimal
+        oscar_adjusted_df['Rating'] = round(oscar_adjusted_df['Rating'], 1)
         write_to_file('oscar_adjusted_ratings', oscar_adjusted_df)
+
+        vote_adjusted_df = adjust_rating_votes(top_n_movies_df)
+        # round rating to 1 decimal
+        vote_adjusted_df['Rating'] = round(vote_adjusted_df['Rating'], 1)
+        write_to_file('vote_adjusted_ratings', vote_adjusted_df)
+
+        # final_top_list_df = final_rank(vote_adjusted_df)
+        # write_to_file('final_top_list', final_top_list_df)
     except InvalidParameterException as e:
         logging.error(f'Error: {e}')
