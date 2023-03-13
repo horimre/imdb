@@ -20,7 +20,7 @@ Once the command is finished, your virtual environment is ready.
 
 windows:
   ```
-  .venv\Scripts\acitvate.var
+  .venv\Scripts\activate.bat
   ```
 mac\linux:
   ```
