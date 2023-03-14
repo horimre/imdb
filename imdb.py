@@ -35,7 +35,8 @@ def get_info_top_n_movies(n: int) -> pd.DataFrame:
     headers = {'Accept-Language': 'en-US'}
     top250 = requests.get(url, headers=headers).text
 
-    top_movies = {"Rank": [], "Title": [], "Link": [], "Rating": [], "Number of Ratings": []}
+    top_movies = {"Rank": [], "Title": [], "Link": [], "Number of Ratings": [],
+                  "Original Rating": [], "Oscar Adjusted Rating": [], "Vote Adjusted Rating": []}
 
     soup = BeautifulSoup(top250, 'lxml')
     movies_table = soup.find('tbody', class_='lister-list')
@@ -56,9 +57,16 @@ def get_info_top_n_movies(n: int) -> pd.DataFrame:
             top_movies["Link"].append(movie_link)
 
         for rating in movie.find_all('td', class_='ratingColumn imdbRating'):
-            # rating is inside a 'strong' tag. number of ratings has to be filtered out from the title tag
+            # rating is inside a 'strong' tag
             # need to convert the values to numbers for later calculation
-            top_movies["Rating"].append(float(rating.find("strong").text))
+            movie_rating = float(rating.find("strong").text)
+            top_movies["Original Rating"].append(movie_rating)
+
+            # assign original rating to oscar and vote adjusted ratings for now
+            top_movies["Oscar Adjusted Rating"].append(movie_rating)
+            top_movies["Vote Adjusted Rating"].append(movie_rating)
+
+            # number of ratings has to be filtered out from the title tag
             top_movies["Number of Ratings"].append(int(rating.find("strong")['title'].split()[3].replace(',', '')))
 
     top_movies_df = pd.DataFrame(top_movies).set_index('Rank')
@@ -120,6 +128,7 @@ async def process_movie_pages(movies_df: pd.DataFrame) -> pd.DataFrame:
             tasks.append(asyncio.create_task(get_number_of_oscars(session, title, url)))
         results = await asyncio.gather(*tasks)
 
+        # add Oscars column and set value in the DataFrame
         movies_df['Oscars'] = results
         # Links column is not needed anymore
         movies_df = movies_df.drop(['Link'], axis=1)
@@ -144,14 +153,17 @@ def oscar_adjustment(row: pd.Series) -> pd.Series:
         Returns:
             row (pd.Series): Transformed DataFrame row
     """
+
     if row["Oscars"] in range(1, 3):
-        row["Rating"] = row["Rating"] + 0.3
+        row["Oscar Adjusted Rating"] = row["Original Rating"] + 0.3
     elif row["Oscars"] in range(3, 6):
-        row["Rating"] = row["Rating"] + 0.5
+        row["Oscar Adjusted Rating"] = row["Original Rating"] + 0.5
     elif row["Oscars"] in range(6, 11):
-        row["Rating"] = row["Rating"] + 1
+        row["Oscar Adjusted Rating"] = row["Original Rating"] + 1
     elif row["Oscars"] > 10:
-        row["Rating"] = row["Rating"] + 1.5
+        row["Oscar Adjusted Rating"] = row["Original Rating"] + 1.5
+    else:
+        row["Oscar Adjusted Rating"] = row["Original Rating"]
 
     return row
 
@@ -166,7 +178,7 @@ def adjust_rating_with_oscars(movies_df: pd.DataFrame) -> pd.DataFrame:
     """
     movies_df = movies_df.apply(oscar_adjustment, axis='columns')
     # round rating to 1 decimal
-    movies_df['Rating'] = round(movies_df['Rating'], 1)
+    movies_df['Oscar Adjusted Rating'] = round(movies_df['Oscar Adjusted Rating'], 1)
     return movies_df
 
 
@@ -178,7 +190,7 @@ def vote_adjustment(row: pd.Series) -> pd.Series:
         Returns:
             row (pd.Series): Transformed DataFrame row
     """
-    row["Rating"] = row["Rating"] - (math.floor((row["max_votes"] - row["Number of Ratings"])/100_000)*0.1)
+    row["Vote Adjusted Rating"] = row["Original Rating"] - (math.floor((row["max_votes"] - row["Number of Ratings"])/100_000)*0.1)
     return row
 
 
@@ -195,42 +207,28 @@ def adjust_rating_with_votes(movies_df: pd.DataFrame) -> pd.DataFrame:
     movies_df = movies_df.apply(vote_adjustment, axis='columns')
 
     # round rating to 1 decimal
-    movies_df['Rating'] = round(movies_df['Rating'], 1)
+    movies_df['Vote Adjusted Rating'] = round(movies_df['Vote Adjusted Rating'], 1)
 
     movies_df = movies_df.drop(['max_votes'], axis=1)
     return movies_df
 
 
-def final_rank(movies_df: pd.DataFrame):
-
-    # sort by rating
-    print(movies_df.index)
-
-    movies_df = movies_df.sort_values(by=["Rating", "Rank"], ascending=False)
-
-    # create rank
-    # movies_df['Rank'] = movies_df['Rating'].rank(ascending=False).astype(int)
-
-    # rearrange columns
-    # movies_df = movies_df[['Rank', 'Title', 'Rating', 'Number of Ratings', 'Oscars']].set_index('Rank')
-
-    return movies_df
-
-
 if __name__ == '__main__':  # pragma: no cover
     try:
-        top_n_movies_df = get_info_top_n_movies(20)
+        n = 20
+        top_n_movies_df = get_info_top_n_movies(n)
         top_n_movies_df = asyncio.run(process_movie_pages(top_n_movies_df))
-        write_to_file('original_ratings', top_n_movies_df)
 
-        oscar_adjusted_df = adjust_rating_with_oscars(top_n_movies_df)
-        write_to_file('oscar_adjusted_ratings', oscar_adjusted_df)
+        top_n_movies_df = adjust_rating_with_oscars(top_n_movies_df)
+        top_n_movies_df = adjust_rating_with_votes(top_n_movies_df)
 
-        vote_adjusted_df = adjust_rating_with_votes(top_n_movies_df)
-        write_to_file('vote_adjusted_ratings', vote_adjusted_df)
+        # rearrange columns
+        top_n_movies_df = top_n_movies_df.reset_index()
+        top_n_movies_df = top_n_movies_df[['Rank', 'Title', 'Oscars', 'Number of Ratings',
+                                           'Original Rating', 'Oscar Adjusted Rating',
+                                           'Vote Adjusted Rating']].set_index('Rank')
 
-        # final_top_list_df = final_rank(vote_adjusted_df)
-        # write_to_file('final_top_list', final_top_list_df)
+        write_to_file(f'imdb_top_{n}', top_n_movies_df)
 
     except InvalidParameterException as e:
         logger.error(f'Error: {e}')
