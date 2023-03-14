@@ -1,6 +1,6 @@
 # imdb top 20 movie scraper
 
-## Installation guide:
+## How to install project from terminal:
 
 1. Clone the repository
 ```
@@ -38,7 +38,7 @@ python imdb.py
 ```
 The scipt produces two output files. Open them from the project folder.
 
-## How to execute unit tests and check coverage report:
+## How to execute unit tests from terminal and check coverage report:
 Inside the virtual environment execute the following commands:
 1. Run unittests
 ```
@@ -54,7 +54,7 @@ coverage html
 ```
 This will generate a subfolder called htmlcov inside the project folder, and html reports about the code coverage (eg. imdb_py.html)
 
-## Deactivate virtual environment:
+## Deactivate virtual environment from terminal:
 After you finished running the code and unittests/coverage report, you can deactive the virtual environment with the following command:
 ```
 deactivate
