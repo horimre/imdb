@@ -17,16 +17,10 @@ python -m venv .venv
 Once the command is finished, your virtual environment is ready.
  
 4. Activate the virtual environment:
-
-windows:
-  ```
-  .venv\Scripts\activate.bat
-  ```
-mac\linux:
-  ```
-  source .venv/bin/activate
-  ```
-  Once activated you will see the name of the environment within the terminal
+```
+source .venv/bin/activate
+```
+Once activated you will see the name of the environment within the terminal
 ```console
 (.venv) (base) horimre@Imre-MBP imdb % 
 ```
