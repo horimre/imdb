@@ -30,13 +30,25 @@ Once activated you will see the name of the environment within the terminal
   pip install -r requirements.txt
   ```
   
-## How to execute the script from terminal:
+## How to execute the script from terminal and check the output file:
 
-Inside the virtual environment execute the script with the following command:
+Inside the virtual environment execute the following commands:
+1. Run script:
 ```
 python imdb.py
 ```
-The script produces an output file called "imdb_top_20.csv". You can open it from the project folder.
+The script produces an output file called "imdb_top_20.csv".
+
+You can open it from the project folder, or print out its content inside the terminal.
+
+2. Clear the terminal screen:
+```
+clear
+```
+3. Print out the content of the output file:
+```
+cat imdb_top_20.csv
+```
 
 ## How to execute unit tests from terminal and check coverage report:
 Inside the virtual environment execute the following commands:
@@ -52,7 +64,7 @@ coverage report
 ```
 coverage html
 ```
-This will generate a subfolder called htmlcov inside the project folder, and html reports about the code coverage (eg. imdb_py.html)
+This will generate a subfolder called htmlcov inside the project folder containing html reports about the code coverage (eg. imdb_py.html)
 
 ## Deactivate virtual environment from terminal:
 After you finished running the code and unittests/coverage report, you can deactive the virtual environment with the following command:
