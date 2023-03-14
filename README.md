@@ -59,3 +59,9 @@ coverage report
 coverage html
 ```
 This will generate a subfolder called htmlcov inside the project folder, and html reports about the code coverage (eg. imdb_py.html)
+
+## Deactivate virtual environment:
+After you finished running the code and unittests/coverage report, you can deactive the virtual environment with the following command:
+```
+deactivate
+```
