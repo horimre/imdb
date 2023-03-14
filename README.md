@@ -36,7 +36,7 @@ Inside the virtual environment execute the script with the following command:
 ```
 python imdb.py
 ```
-The scipt produces two output files. Open them from the project folder.
+The script produces an output file called "imdb_top_20.csv". You can open it from the project folder.
 
 ## How to execute unit tests from terminal and check coverage report:
 Inside the virtual environment execute the following commands:
