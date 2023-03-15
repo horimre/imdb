@@ -39,7 +39,10 @@ def get_info_top_n_movies(n: int) -> pd.DataFrame:
                   "Original Rating": [], "Oscar Adjusted Rating": [], "Vote Adjusted Rating": []}
 
     soup = BeautifulSoup(top250, 'lxml')
+
     movies_table = soup.find('tbody', class_='lister-list')
+
+    # find first n rows in the table by providing limit attribute
     movies = movies_table.find_all('tr', limit=n)
 
     for idx, movie in enumerate(movies):
@@ -50,6 +53,7 @@ def get_info_top_n_movies(n: int) -> pd.DataFrame:
         for title in movie.find_all('td', class_='titleColumn'):
             # title is inside an 'a' tag
             movie_title = title.find("a").text
+
             # construct link from relative url
             movie_link = f'https://www.imdb.com{title.find("a")["href"]}'
 
@@ -66,7 +70,8 @@ def get_info_top_n_movies(n: int) -> pd.DataFrame:
             top_movies["Oscar Adjusted Rating"].append(movie_rating)
             top_movies["Vote Adjusted Rating"].append(movie_rating)
 
-            # number of ratings has to be filtered out from the title tag
+            # number of ratings has to be filtered out from the title attribute of the strong tag
+            # e.g. "9,2 based on 2,714,538 user ratings"
             top_movies["Number of Ratings"].append(int(rating.find("strong")['title'].split()[3].replace(',', '')))
 
     top_movies_df = pd.DataFrame(top_movies).set_index('Rank')
@@ -87,7 +92,7 @@ def generate_movie_links_dict(movies_df: pd.DataFrame) -> dict:
 
 async def get_number_of_oscars(session: aiohttp.ClientSession, movie_title: str, movie_url: str) -> int:
     """
-    Get the number of Oscars won from the specific movie page.
+    Async function to get the number of Oscars won from the specific movie page.
     Simulate that the request is coming from Mozilla else getting HTTP 403
         Parameters:
             session (aiohttp.ClientSession): the session (the same session is used for every individual call)
@@ -124,14 +129,17 @@ async def process_movie_pages(movies_df: pd.DataFrame) -> pd.DataFrame:
     """
     async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
         tasks = []
+
         for title, url in generate_movie_links_dict(movies_df).items():
             tasks.append(asyncio.create_task(get_number_of_oscars(session, title, url)))
         results = await asyncio.gather(*tasks)
 
         # add Oscars column and set value in the DataFrame
         movies_df['Oscars'] = results
-        # Links column is not needed anymore
+
+        # drop Links column as it is not needed anymore
         movies_df = movies_df.drop(['Link'], axis=1)
+
         return movies_df
 
 
@@ -149,11 +157,10 @@ def oscar_adjustment(row: pd.Series) -> pd.Series:
     """
     Calculate the oscar adjustment
         Parameters:
-            row (pd.Series): Row of the DataFrame to transform
+            row (pd.Series): Row of the DataFrame to be transformed
         Returns:
             row (pd.Series): Transformed DataFrame row
     """
-
     if row["Oscars"] in range(1, 3):
         row["Oscar Adjusted Rating"] = row["Original Rating"] + 0.3
     elif row["Oscars"] in range(3, 6):
@@ -177,8 +184,10 @@ def adjust_rating_with_oscars(movies_df: pd.DataFrame) -> pd.DataFrame:
             movies_df (pd.DataFrame): Transformed movies DataFrame
     """
     movies_df = movies_df.apply(oscar_adjustment, axis='columns')
+
     # round rating to 1 decimal
     movies_df['Oscar Adjusted Rating'] = round(movies_df['Oscar Adjusted Rating'], 1)
+
     return movies_df
 
 
@@ -209,7 +218,9 @@ def adjust_rating_with_votes(movies_df: pd.DataFrame) -> pd.DataFrame:
     # round rating to 1 decimal
     movies_df['Vote Adjusted Rating'] = round(movies_df['Vote Adjusted Rating'], 1)
 
+    # drop max_votes column as it is not needed anymore
     movies_df = movies_df.drop(['max_votes'], axis=1)
+
     return movies_df
 
 
