@@ -49,6 +49,11 @@ clear
 ```
 cat imdb_top_20.csv
 ```
+4. You can also check the file with Quick Look with the following command:
+```
+qlmanage -p imdb_top_20.csv 2>/dev/null
+```
+Close quick look with yor mouse or Ctrl+C
 
 ## How to execute unit tests from terminal and check coverage report:
 Inside the virtual environment execute the following commands:
