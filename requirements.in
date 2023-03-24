@@ -1,0 +1,6 @@
+aiohttp
+beautifulsoup4
+coverage
+lxml
+pandas
+requests
