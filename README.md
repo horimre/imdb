@@ -59,17 +59,17 @@ Close quick look with yor mouse or Ctrl+C
 Inside the virtual environment execute the following commands:
 1. Run unittests
 ```
-coverage run imdb_test.py
+pytest
 ```
 2. Check code coverage:
 ```
-coverage report
+pytest --cov-config=.coveragerc --cov
 ```
 3. Generate html reports:
 ```
-coverage html
+pytest --cov-report=html:coverage-report --cov
 ```
-This will generate a subfolder called htmlcov inside the project folder containing html reports about the code coverage (eg. imdb_py.html)
+This will generate a subfolder called coverage-report inside the project folder containing a html report about the code coverage (index.html)
 
 ## Deactivate virtual environment from terminal:
 After you finished running the code and unittests/coverage report, you can deactive the virtual environment with the following command:

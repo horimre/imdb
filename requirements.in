@@ -4,3 +4,5 @@ coverage
 lxml
 pandas
 requests
+pytest
+pytest-cov
