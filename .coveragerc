@@ -1,2 +1,3 @@
 [run]
-omit = imdb_test.py
+omit = tests/*
+    src/__init__.py
